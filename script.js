@@ -1,41 +1,3 @@
-/**
- * YURI ZESH - JavaScript
- * Form handling, animations, and interactions
- */
-
-// ============================================
-// Configuration
-// ============================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('monFormulaire'); // ou le sélecteur approprié
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        
-        try {
-            const response = await fetch('https://hook.eu1.make.com/v23zadasky27c9obr4vwwtwjjdxu4ou3', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            });
-            
-            if (response.ok) {
-                // Succès
-            } else {
-                // Erreur
-            }
-        } catch (error) {
-            // Erreur réseau
-        }
-    });
-});
-
 const PDF_URL = 'public/guide-7-pieges.pdf';
 
 // ============================================
@@ -105,10 +67,8 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 // ============================================
-// Form Submission
+// Form Submission (avec webhook Make.com)
 // ============================================
-
-
 function downloadPDF() {
     const link = document.createElement('a');
     link.href = PDF_URL;
@@ -148,39 +108,54 @@ function hideSuccessModal() {
     }
 }
 
-guideForm?.addEventListener('submit', function(e) {
+// ✅ Listener unique sur #guideForm avec appel webhook
+guideForm?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    
+
     const prenomInput = document.getElementById('prenom');
     const emailInput = document.getElementById('email');
-    
+
     const prenom = prenomInput?.value.trim();
     const email = emailInput?.value.trim();
-    
+
     // Validation
     if (!prenom || !email) {
         alert('Veuillez remplir tous les champs');
         return;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         alert('Veuillez entrer une adresse email valide');
         return;
     }
-    
+
     setLoading(true);
-    
-    // Télécharger le PDF
-    downloadPDF();
-    
-    // Afficher le modal de succès
-    showSuccessModal();
-    
-    // Reset form
-    guideForm.reset();
-    
-    setLoading(false);
+
+    try {
+        const response = await fetch('https://hook.eu1.make.com/v23zadasky27c9obr4vwwtwjjdxu4ou3', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prenom, email })
+        });
+
+        if (response.ok) {
+            // Télécharger le PDF
+            downloadPDF();
+            // Afficher le modal de succès
+            showSuccessModal();
+            // Reset form
+            guideForm.reset();
+        } else {
+            alert('Une erreur est survenue. Veuillez réessayer.');
+        }
+    } catch (error) {
+        alert('Erreur réseau. Veuillez réessayer.');
+    } finally {
+        setLoading(false);
+    }
 });
 
 closeModal?.addEventListener('click', hideSuccessModal);
